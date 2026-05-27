@@ -8,28 +8,33 @@ recommend_bp = Blueprint("recommend", __name__)
 def recommend():
     data = request.get_json()
 
-    # ✅ VALIDATION
+    # ✅ validation
     if not data or "input" not in data:
         return jsonify({"error": "Input is required"}), 400
 
     user_input = data["input"]
 
-    # ✅ LOAD PROMPT
+    # ✅ load prompt
     with open("prompts/recommend.txt", "r") as f:
         prompt_template = f.read()
 
     prompt = prompt_template.replace("{input}", user_input)
 
-    # ✅ CALL AI
+    # ✅ call AI
     ai_response = generate_response(prompt)
 
     if ai_response is None:
         return jsonify({"error": "AI service failed"}), 500
 
-    # ✅ PARSE JSON
+    # ✅ parse JSON
     try:
         parsed = json.loads(ai_response)
-    except:
+
+        # 🔥 enforce exactly 3 recommendations
+        if not isinstance(parsed, list) or len(parsed) != 3:
+            return jsonify({"error": "AI did not return exactly 3 recommendations"}), 500
+
+    except Exception as e:
         return jsonify({"error": "Invalid AI response"}), 500
 
     return jsonify(parsed)

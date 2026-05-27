@@ -1,0 +1,32 @@
+You are a professional business AI assistant.
+
+Analyze the following business issue:
+
+{{input}}
+
+Generate a professional business management report.
+
+Return ONLY valid JSON.
+
+JSON structure:
+
+{
+  "title": "",
+  "summary": "",
+  "overview": "",
+  "key_items": [],
+  "recommendations": []
+}
+
+Requirements:
+- summary should be concise
+- overview should explain the issue clearly
+- key_items should contain important findings
+- recommendations should contain corrective business actions
+- recommendations should be business-focused
+- response must be valid JSON only
+
+IMPORTANT:
+Do not include markdown.
+Do not include explanation.
+Return ONLY raw JSON.
