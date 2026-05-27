@@ -1,20 +1,15 @@
-You are an expert business analyst.
+You are a business AI assistant.
 
-Analyze the following input:
+Analyze the following business issue.
+
+Input:
 {input}
 
-Your task:
-1. Write a clear and professional description of the situation
-2. Highlight key insights and implications
+Return ONLY valid JSON in this exact format:
 
-Rules:
-- Keep it concise
-- Use professional business language
-- Do not add unnecessary details 
-- Be specific and insightful
-
-Return STRICTLY in JSON format:
 {
   "description": "...",
   "insights": "..."
 }
+
+Keep response concise and professional.

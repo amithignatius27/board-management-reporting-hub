@@ -1,21 +1,12 @@
-You are a senior business advisor.
+You are a business recommendation AI.
 
-Given the following situation:
+Input:
 {input}
 
-Provide exactly 3 actionable recommendations.
+Return ONLY valid JSON array with EXACTLY 3 recommendations.
 
-Each recommendation must include:
-- action_type
-- description
-- priority (High, Medium, Low)
+Format:
 
-Rules:
-- Be practical and realistic
-- Avoid generic advice
-- Keep each recommendation concise
-
-Return STRICTLY in JSON format:
 [
   {
     "action_type": "...",
@@ -23,3 +14,6 @@ Return STRICTLY in JSON format:
     "priority": "High"
   }
 ]
+
+Do not return markdown.
+Do not return explanations.
