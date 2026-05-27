@@ -3,39 +3,95 @@ from services.groq_client import generate_response
 from datetime import datetime
 import json
 
+from services.cache_service import (
+    get_cached_response,
+    save_response_to_cache
+)
+
 describe_bp = Blueprint("describe", __name__)
 
 @describe_bp.route("/describe", methods=["POST"])
 def describe():
-    data = request.get_json()
 
-    # ✅ 1. VALIDATION
-    if not data or "input" not in data:
-        return jsonify({"error": "Input is required"}), 400
-
-    user_input = data["input"]
-
-    # ✅ 2. LOAD PROMPT
-    with open("prompts/describe.txt", "r") as f:
-        prompt_template = f.read()
-
-    prompt = prompt_template.replace("{input}", user_input)
-
-    # ✅ 3. CALL AI
-    ai_response = generate_response(prompt)
-
-    if ai_response is None:
-        return jsonify({"error": "AI service failed"}), 500
-
-    # ✅ 4. PARSE JSON (IMPORTANT)
     try:
-        parsed = json.loads(ai_response)
-    except:
-        return jsonify({"error": "Invalid AI response"}), 500
+        data = request.get_json()
 
-    # ✅ 5. RETURN FINAL RESPONSE
-    return jsonify({
-        "description": parsed.get("description"),
-        "insights": parsed.get("insights"),
-        "generated_at": datetime.utcnow().isoformat()
-    })
+        # ✅ 1. VALIDATION
+        if not data or "input" not in data:
+            return jsonify({
+                "success": False,
+                "error": "Input is required"
+            }), 400
+
+        user_input = data["input"]
+
+        # ✅ 2. CHECK CACHE
+        cached_response = get_cached_response(
+            "describe",
+            user_input
+        )
+
+        if cached_response:
+            return jsonify({
+                "success": True,
+                "source": "cache",
+                "data": cached_response
+            })
+
+        # ✅ 3. LOAD PROMPT
+        with open("prompts/describe.txt", "r") as f:
+            prompt_template = f.read()
+
+        prompt = prompt_template.replace("{input}", user_input)
+
+        # ✅ 4. CALL AI
+        ai_response = generate_response(prompt)
+
+        if ai_response is None:
+            return jsonify({
+                "success": False,
+                "error": "AI service failed"
+            }), 500
+
+        # ✅ 5. CLEAN RESPONSE
+        clean_response = ai_response.replace(
+            "```json", ""
+        ).replace(
+            "```", ""
+        ).strip()
+
+        # DEBUG (optional)
+        print(clean_response)
+
+        # ✅ 6. PARSE JSON
+        parsed = json.loads(clean_response)
+
+        # ✅ 7. FINAL RESPONSE DATA
+        response_data = {
+            "description": parsed.get("description"),
+            "insights": parsed.get("insights"),
+            "generated_at": datetime.utcnow().isoformat()
+        }
+
+        # ✅ 8. SAVE TO CACHE
+        save_response_to_cache(
+            "describe",
+            user_input,
+            response_data
+        )
+
+        # ✅ 9. RETURN RESPONSE
+        return jsonify({
+            "success": True,
+            "source": "ai",
+            "data": response_data
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "is_fallback": True,
+            "error": "Description generation failed",
+            "details": str(e)
+        }), 500
