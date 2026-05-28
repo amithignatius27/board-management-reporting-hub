@@ -2,6 +2,8 @@ from flask import Blueprint, request, jsonify
 from services.groq_client import generate_response
 from datetime import datetime
 import json
+from services.json_cleaner import clean_json_response
+from services.fallback_service import fallback_description
 
 from services.cache_service import (
     get_cached_response,
@@ -24,6 +26,11 @@ def describe():
             }), 400
 
         user_input = data["input"]
+        if len(user_input) > 2000:
+            return jsonify({
+                "success": False,
+                "error": "Input too long"
+                }), 400
 
         # ✅ 2. CHECK CACHE
         cached_response = get_cached_response(
@@ -49,16 +56,13 @@ def describe():
 
         if ai_response is None:
             return jsonify({
-                "success": False,
-                "error": "AI service failed"
-            }), 500
+                "success": True,
+                "source": "fallback",
+                "data": fallback_description()
+    })
 
         # ✅ 5. CLEAN RESPONSE
-        clean_response = ai_response.replace(
-            "```json", ""
-        ).replace(
-            "```", ""
-        ).strip()
+        clean_response = clean_json_response(ai_response)
 
         # DEBUG (optional)
         print(clean_response)
@@ -88,10 +92,10 @@ def describe():
         })
 
     except Exception as e:
-
+        print("DESCRIBE ERROR:")
+        print(str(e))
         return jsonify({
-            "success": False,
-            "is_fallback": True,
-            "error": "Description generation failed",
-            "details": str(e)
-        }), 500
+            "success": True,
+            "source": "fallback",
+            "data": fallback_description()
+            })

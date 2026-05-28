@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from services.groq_client import generate_response
 from datetime import datetime
 import json
+from services.json_cleaner import clean_json_response
 
 from services.cache_service import (
     get_cached_response,
@@ -24,6 +25,12 @@ def generate_report():
             }), 400
 
         user_input = data["input"]
+
+        if len(user_input) > 2000:
+            return jsonify({
+                "success": False,
+                "error": "Input too long"
+                }), 400
 
         # ✅ CHECK CACHE
         cached_response = get_cached_response(
@@ -54,11 +61,7 @@ def generate_report():
             }), 500
 
         # clean markdown formatting
-        clean_response = response.replace(
-            "```json", ""
-        ).replace(
-            "```", ""
-        ).strip()
+        clean_response = clean_json_response(response)
 
         print("AI RAW RESPONSE:")
         print(clean_response)

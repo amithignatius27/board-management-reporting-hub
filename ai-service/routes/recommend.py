@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from services.groq_client import generate_response
 import json
+from services.json_cleaner import clean_json_response
 
 from services.cache_service import (
     get_cached_response,
@@ -24,6 +25,11 @@ def recommend():
             }), 400
 
         user_input = data["input"]
+        if len(user_input) > 2000:
+            return jsonify({
+                "success": False,
+                "error": "Input too long"
+                }), 400
 
         # load prompt
         with open("prompts/recommend.txt", "r") as f:
@@ -54,11 +60,7 @@ def recommend():
             }), 500
 
         # clean markdown
-        clean_response = ai_response.replace(
-            "```json", ""
-        ).replace(
-            "```", ""
-        ).strip()
+        clean_response = clean_json_response(ai_response)
 
         # parse JSON
         recommendations = json.loads(clean_response)

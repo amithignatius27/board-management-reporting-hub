@@ -25,38 +25,46 @@ client = Groq(api_key=api_key)
 
 def generate_response(prompt):
 
-    try:
+    retries = 3
 
-        start_time = time.time()
+    for attempt in range(retries):
 
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
+        try:
 
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
+            start_time = time.time()
 
-            temperature=TEMPERATURE,
-            max_tokens=MAX_TOKENS
-        )
+            response = client.chat.completions.create(
+                model=MODEL_NAME,
 
-        end_time = time.time()
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
 
-        print(f"AI Response Time: {end_time - start_time:.2f} seconds")
+                temperature=TEMPERATURE,
+                max_tokens=MAX_TOKENS
+            )
 
-        content = response.choices[0].message.content
+            end_time = time.time()
 
-        if not content:
-            return None
+            print(
+                f"AI Response Time: {end_time - start_time:.2f} seconds"
+            )
 
-        return content
+            content = response.choices[0].message.content
 
-    except Exception as e:
+            if not content:
+                raise Exception("Empty AI response")
 
-        print("GROQ ERROR:")
-        print(str(e))
+            return content
 
-        return None
+        except Exception as e:
+
+            print(f"Retry {attempt + 1} failed")
+            print(str(e))
+
+            time.sleep(1)
+
+    return None
