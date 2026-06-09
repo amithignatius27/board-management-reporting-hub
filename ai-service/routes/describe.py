@@ -4,6 +4,8 @@ from datetime import datetime
 import json
 from services.json_cleaner import clean_json_response
 from services.fallback_service import fallback_description
+from services.logger_service import logger
+import time
 
 from services.cache_service import (
     get_cached_response,
@@ -26,6 +28,8 @@ def describe():
             }), 400
 
         user_input = data["input"]
+        user_input = user_input.strip()
+        logger.info(f"Describe request received: {user_input}")
         if len(user_input) > 2000:
             return jsonify({
                 "success": False,
@@ -39,6 +43,7 @@ def describe():
         )
 
         if cached_response:
+            logger.info("Describe cache hit")
             return jsonify({
                 "success": True,
                 "source": "cache",
@@ -50,16 +55,22 @@ def describe():
             prompt_template = f.read()
 
         prompt = prompt_template.replace("{input}", user_input)
+        
+        start_time = time.time()
 
         # ✅ 4. CALL AI
         ai_response = generate_response(prompt)
+        end_time = time.time()
+        logger.info(f"Describe response time: {end_time - start_time:.2f}s")    
 
         if ai_response is None:
+            logger.warning("Fallback response used")
             return jsonify({
                 "success": True,
                 "source": "fallback",
                 "data": fallback_description()
     })
+        
 
         # ✅ 5. CLEAN RESPONSE
         clean_response = clean_json_response(ai_response)
@@ -83,6 +94,7 @@ def describe():
             user_input,
             response_data
         )
+        logger.info("Describe AI response generated")
 
         # ✅ 9. RETURN RESPONSE
         return jsonify({
@@ -92,8 +104,8 @@ def describe():
         })
 
     except Exception as e:
-        print("DESCRIBE ERROR:")
-        print(str(e))
+        logger.error("DESCRIBE ERROR")
+        logger.error(str(e))
         return jsonify({
             "success": True,
             "source": "fallback",
