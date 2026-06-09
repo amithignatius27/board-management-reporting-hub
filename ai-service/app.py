@@ -5,6 +5,7 @@ from routes.report import report_bp
 from routes.health import health_bp
 from flask_cors import CORS
 from flask_talisman import Talisman
+from services.embedding_service import embedding_model
 
 
 
